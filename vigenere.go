@@ -2,15 +2,27 @@ package vinegar
 
 import (
 	"bytes"
+	"slices"
 	"strings"
 )
 
-// VigenereTable produces a Vigenere Table using the given keyword. It first
+// Enforce interface
+var _ Vigenere = (*vigenere)(nil)
+
+// vigenere is the implementation of the Vigenere cipher containing the table
+// used for encryption and decryption of plain/cipher text
+type vigenere struct {
+	table [26][26]rune
+}
+
+// NewVigenere produces a Vigenere Table using the given keyword. It first
 // will format the keyword given by removing any duplicates and enforcing it
 // to be 26 lowercasse latin characters. Once formatted the table is produced
-// by shifting the alphabet 26 times maaking a 26x26 matrix of runes.
-func VigenereTable(keyword string) [][]rune {
-	table := make([][]rune, 26)
+// by shifting the alphabet 26 times maaking a 26x26 matrix of runes
+func NewVigenere(keyword string) Vigenere {
+	v := &vigenere{
+		table: [26][26]rune{},
+	}
 	alphabet := "abcdefghijklmnopqrstuvwxyz"
 	if keyword != "" {
 		valid := formatTableKeyword(keyword)
@@ -24,40 +36,44 @@ func VigenereTable(keyword string) [][]rune {
 		if i > 0 {
 			alphabet = alphabet[1:] + string(alphabet[0])
 		}
-		table[i] = bytes.Runes([]byte(alphabet))
+		copy(v.table[i][:], bytes.Runes([]byte(alphabet)))
 	}
-
-	return table
+	return v
 }
 
-func formatTableKeyword(keyword string) string {
-	formatted := strings.ToLower(keyword)
-	if containsDuplicate(keyword) {
-		formatted = removeDuplicates(keyword)
-	}
-	if len(formatted) > 26 {
-		return formatted[:26]
-	}
-	return formatted
-}
-
-func containsDuplicate(s string) bool {
-	seen := make(map[rune]int)
-	for _, c := range s {
-		seen[c]++
-	}
-	return len(seen) != len(s)
-}
-
-func removeDuplicates(s string) string {
+// Encrypt encrypts the given message using the keyword provided
+// according to the vigenere table of the Vigenere struct.
+func (v *vigenere) Encrypt(message, keyword string) string {
+	trimmed := strings.ReplaceAll(message, " ", "")
+	valid := formatEncryptionKeyword(keyword, trimmed)
 	str := strings.Builder{}
-	seen := make(map[rune]int)
-	for _, c := range s {
-		if _, ok := seen[c]; ok {
-			continue
+	for i := 0; i < len(trimmed); i++ {
+		p := rune(trimmed[i])
+		k := rune(valid[i])
+		idx := slices.Index(v.table[0][:], k)
+		for _, row := range v.table {
+			if row[0] == p {
+				str.WriteRune(row[idx])
+			}
 		}
-		str.WriteRune(c)
-		seen[c]++
+	}
+	return str.String()
+}
+
+// Decrypt decrypts the provided ciphertext using the keyword and
+// vigenere table from the struct - the resulting plaintext will have no spaces.
+func (v *vigenere) Decrypt(cipher, keyword string) string {
+	valid := formatEncryptionKeyword(keyword, cipher)
+	str := strings.Builder{}
+	for i := 0; i < len(cipher); i++ {
+		c := rune(cipher[i])
+		k := rune(valid[i])
+		idx := slices.Index(v.table[0][:], k)
+		for _, row := range v.table {
+			if row[idx] == c {
+				str.WriteRune(row[0])
+			}
+		}
 	}
 	return str.String()
 }
