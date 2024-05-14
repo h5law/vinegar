@@ -2,6 +2,8 @@ package vinegar
 
 import "strings"
 
+// formatKeyWord removes any non-latin characters, removes all spaces and
+// converts the given keyword to lowercase.
 func formatKeyword(keyword string) string {
 	return strings.Map(func(r rune) rune {
 		if r == ' ' {
@@ -18,6 +20,8 @@ func formatKeyword(keyword string) string {
 	}, keyword)
 }
 
+// formatTableKeyword calls formatKeyword then removes any duplicated and
+// ensures the keyword is at most 26 characters long.
 func formatTableKeyword(keyword string) string {
 	keyword = formatKeyword(keyword)
 	keyword = removeDuplicates(keyword)
@@ -27,19 +31,22 @@ func formatTableKeyword(keyword string) string {
 	return keyword
 }
 
+// removeDuplicates removes any duplicates from the provided keyword.
 func removeDuplicates(s string) string {
 	str := strings.Builder{}
-	seen := make(map[rune]int)
+	seen := make([]int, 26)
 	for _, c := range s {
-		if _, ok := seen[c]; ok {
-			continue
+		if seen[c%26] == 0 {
+			str.WriteRune(c)
+		} else {
+			seen[c%26] = 1
 		}
-		str.WriteRune(c)
-		seen[c]++
 	}
 	return str.String()
 }
 
+// formatEncryptionKeyword ensures the keyword is formatted with formatKeyword
+// then is repeated (and spliced if necessary) to be the same length as the message.
 func formatEncryptionKeyword(keyword, message string) string {
 	keyword = formatKeyword(keyword)
 	k, m := len(keyword), len(message)
