@@ -1,7 +1,6 @@
 package vinegar
 
 import (
-	"bytes"
 	"slices"
 	"strings"
 )
@@ -31,12 +30,10 @@ func NewVigenere(keyword string) Vigenere {
 		}
 		alphabet = valid + alphabet
 	}
-
-	for i := 0; i < 26; i++ {
-		if i > 0 {
-			alphabet = alphabet[1:] + string(alphabet[0])
-		}
-		copy(v.table[i][:], bytes.Runes([]byte(alphabet)))
+	v.table[0] = ([26]rune)([]rune(alphabet))
+	for i := 1; i < 26; i++ {
+		alphabet = alphabet[1:] + string(alphabet[0])
+		v.table[i] = ([26]rune)([]rune(alphabet))
 	}
 	return v
 }
@@ -44,16 +41,16 @@ func NewVigenere(keyword string) Vigenere {
 // Encrypt encrypts the given message using the keyword provided
 // according to the vigenere table of the Vigenere struct.
 func (v *vigenere) Encrypt(message, keyword string) string {
-	trimmed := strings.ReplaceAll(message, " ", "")
-	valid := formatEncryptionKeyword(keyword, trimmed)
+	msg := formatKeyword(message)
+	key := formatEncryptionKeyword(keyword, msg)
 	str := strings.Builder{}
-	for i := 0; i < len(trimmed); i++ {
-		p := rune(trimmed[i])
-		k := rune(valid[i])
-		idx := slices.Index(v.table[0][:], k)
+	for i := 0; i < len(msg); i++ {
+		p := rune(msg[i])
+		idx := slices.Index(v.table[0][:], rune(key[i]))
 		for _, row := range v.table {
 			if row[0] == p {
 				str.WriteRune(row[idx])
+				break
 			}
 		}
 	}
@@ -63,15 +60,15 @@ func (v *vigenere) Encrypt(message, keyword string) string {
 // Decrypt decrypts the provided ciphertext using the keyword and
 // vigenere table from the struct - the resulting plaintext will have no spaces.
 func (v *vigenere) Decrypt(cipher, keyword string) string {
-	valid := formatEncryptionKeyword(keyword, cipher)
+	key := formatEncryptionKeyword(keyword, cipher)
 	str := strings.Builder{}
 	for i := 0; i < len(cipher); i++ {
 		c := rune(cipher[i])
-		k := rune(valid[i])
-		idx := slices.Index(v.table[0][:], k)
+		idx := slices.Index(v.table[0][:], rune(key[i]))
 		for _, row := range v.table {
 			if row[idx] == c {
 				str.WriteRune(row[0])
+				break
 			}
 		}
 	}
