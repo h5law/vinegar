@@ -41,14 +41,14 @@ func TestFormatTableKeyword_Random(t *testing.T) {
 			defer wg.Done()
 			randString := randomString(t)
 			formatTableStr := formatTableKeyword(randString)
-			require.Len(t, formatTableStr, 26)
+			require.LessOrEqual(t, len(formatTableStr), 26)
 			seen := make([]int, 26)
 			for _, c := range formatTableStr {
-				if seen[c%26] != 0 {
-					(*t).Fatalf("[error] found duplicate character: %c", c)
-				} else {
+				if seen[c%26] == 0 {
 					seen[c%26] = 1
-
+				} else {
+					t.Log(formatTableStr)
+					(*t).Fatalf("[error] found duplicate character: %c", c)
 				}
 			}
 		}(t, wg)

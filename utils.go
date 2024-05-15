@@ -38,9 +38,8 @@ func removeDuplicates(s string) string {
 	for _, c := range s {
 		if seen[c%26] == 0 {
 			str.WriteRune(c)
-		} else {
-			seen[c%26] = 1
 		}
+		seen[c%26] = 1
 	}
 	return str.String()
 }
