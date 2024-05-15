@@ -17,7 +17,7 @@ type vigenere struct {
 // NewVigenere produces a Vigenere Table using the given keyword. It first
 // will format the keyword given by removing any duplicates and enforcing it
 // to be 26 lowercasse latin characters. Once formatted the table is produced
-// by shifting the alphabet 26 times maaking a 26x26 matrix of runes
+// by shifting the alphabet 26 times making a 26x26 matrix of runes
 func NewVigenere(keyword string) Vigenere {
 	v := &vigenere{
 		table: [26][26]rune{},
