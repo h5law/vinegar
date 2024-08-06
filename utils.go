@@ -1,69 +1,87 @@
 package vinegar
 
-import "strings"
+import (
+	"slices"
+	"unicode/utf8"
+)
 
-// formatKeyWord removes any non-latin characters, removes all spaces and
-// converts the given keyword to lowercase.
-func formatKeyword(keyword string) string {
-	return strings.Map(func(r rune) rune {
-		if r == ' ' {
-			return -1
-		}
-		if r > 'z' || r < 'a' {
-			if r >= 'A' && r <= 'Z' {
-				r += 32
-			} else {
-				return -1
-			}
-		}
-		return r
-	}, keyword)
+// removeSpaces removes all the spaces in a given rune slice.
+func removeSpaces(r []rune) []rune {
+	if !utf8.ValidString(string(r)) {
+		panic("Invalid UTF-8 string") // this should never happen
+	}
+	for i := slices.Index(r, ' '); i != -1; i = slices.Index(r, ' ') {
+		r = append(r[:i], r[i+1:]...)
+	}
+	return r
 }
 
-// formatTableKeyword calls formatKeyword then removes any duplicated and
-// ensures the keyword is at most 26 characters long.
-func formatTableKeyword(keyword string) string {
-	keyword = formatKeyword(keyword)
-	keyword = removeDuplicates(keyword)
-	if len(keyword) > 26 {
-		return keyword[:26]
+// removeDuplicates removes all duplicates from
+// a UTF-8 string returning a slice of runes and its length.
+func removeDuplicates(word []rune) ([]rune, int) {
+	width := utf8.RuneCountInString(string(word))
+	seen := make(map[rune]bool, width)
+	stdWord := make([]rune, 0, width)
+
+	for len(word) > 0 {
+		if !seen[word[0]] {
+			stdWord = append(stdWord, word[0])
+			seen[word[0]] = true
+		}
+		word = word[1:]
 	}
-	return keyword
+
+	return stdWord, len(stdWord) // length in runes not bytes
 }
 
-// removeDuplicates removes any duplicates from the provided keyword.
-func removeDuplicates(s string) string {
-	str := strings.Builder{}
-	seen := make([]int, 26)
-	for _, c := range s {
-		if seen[c%26] == 0 {
-			str.WriteRune(c)
-		} else {
-			seen[c%26] = 1
-		}
+// formatKeyword removes any characters from the keyword that are not in
+// the alphabet preparing it to be prefixed to the alphabet for the table.
+func formatKeyword(keyword, alphabet []rune) []rune {
+	alphabetMap := make(map[rune]bool)
+	for _, r := range alphabet {
+		alphabetMap[r] = true
 	}
-	return str.String()
+	stdKeyword := make([]rune, 0, len(keyword))
+	for len(keyword) > 0 {
+		if alphabetMap[keyword[0]] {
+			stdKeyword = append(stdKeyword, keyword[0])
+		}
+		keyword = keyword[1:]
+	}
+	var stdLen int
+	stdKeyword, stdLen = removeDuplicates(stdKeyword)
+	if stdLen > len(alphabet) {
+		return stdKeyword[:len(alphabet)] // truncate to alphabet length
+	}
+	return stdKeyword
 }
 
 // formatEncryptionKeyword ensures the keyword is formatted with formatKeyword
 // then is repeated (and spliced if necessary) to be the same length as the message.
-func formatEncryptionKeyword(keyword, message string) string {
-	keyword = formatKeyword(keyword)
-	k, m := len(keyword), len(message)
+func formatSecretKeyword(secret, alphabet []rune, message string) []rune {
+	if !utf8.ValidString(message) {
+		panic("Invalid UTF-8 string") // this should never happen
+	}
+	secret = formatKeyword(secret, alphabet) // ensure secret is form
+
+	runeMsg := []rune(message)
+	runeMsg = removeSpaces(runeMsg)
+
+	k, m := len(secret), len(runeMsg)
 	if k == m {
-		return keyword
+		return secret
 	}
 	if k > m {
-		return keyword[:m]
+		return secret[:m]
 	}
-	str := strings.Builder{}
-	str.WriteString(keyword)
-	for str.Len() != m {
-		if m-str.Len() >= k {
-			str.WriteString(keyword)
+	paddedSecret := make([]rune, 0, len(runeMsg))
+	for len(paddedSecret) != m {
+		if m-len(paddedSecret) >= k {
+			paddedSecret = append(paddedSecret, secret...)
 		} else {
-			str.WriteString(keyword[:m-str.Len()])
+			paddedSecret = append(paddedSecret, secret[:m-len(paddedSecret)]...)
 		}
 	}
-	return str.String()
+
+	return paddedSecret
 }
