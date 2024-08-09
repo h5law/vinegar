@@ -1,6 +1,7 @@
 package vinegar
 
 import (
+	"slices"
 	"unicode/utf8"
 )
 
@@ -51,6 +52,22 @@ func formatKeyword(keyword, alphabet []rune) []rune {
 		stdKeyword = stdKeyword[:len(alphabet)]
 	}
 	return stdKeyword
+}
+
+// formatAlphabetWithKeyword shuffles the provided alphabet removing any
+// characters that are in the keyword and prefixing it with the keyword.
+func formatAlphabetWithKeyword(keyword, alphabet []rune) []rune {
+	if len(keyword) != 0 {
+		// ensure the keyword is formatted correctly
+		keyword = formatKeyword(keyword, alphabet)
+		// remove any characters in the alphabet that are in the keyword
+		alphabet = slices.DeleteFunc(alphabet, func(r rune) bool {
+			return slices.Contains(keyword, r)
+		})
+		// prefix the alphabet with the keyword
+		alphabet = append(keyword, alphabet...)
+	}
+	return alphabet
 }
 
 // formatEncryptionKeyword ensures the keyword is formatted with formatKeyword

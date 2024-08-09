@@ -113,6 +113,10 @@ func (t *TableConfig) Validate() error {
 	return nil
 }
 
+// NewTableConfig generates a new table config using the provided alphabet,
+// keyword and secretKey - all UTF-8 encoded strings. The alphabet will be
+// standardised along with the keyword and secretKey according to their
+// individual requirements.
 func NewTableConfig(alphabet, keyword, secretKey string) (*TableConfig, error) {
 	if alphabet == "" {
 		return nil, errors.New("Alphabet cannot be empty")
@@ -132,14 +136,15 @@ func NewTableConfig(alphabet, keyword, secretKey string) (*TableConfig, error) {
 
 	var stdAlphabet, stdKeyword, stdSecret []rune
 	// stdAlphabet = removeSpaces([]rune(alphabet))
-	stdAlphabet, _ = removeDuplicates(stdAlphabet)
+	stdAlphabet, _ = removeDuplicates([]rune(alphabet))
 	if keyword != "" {
 		// stdKeyword = removeSpaces([]rune(keyword))
-		stdKeyword, _ = removeDuplicates(stdKeyword)
+		stdKeyword, _ = removeDuplicates([]rune(keyword))
 		stdKeyword = formatKeyword(stdKeyword, stdAlphabet)
+		stdAlphabet = formatAlphabetWithKeyword(stdKeyword, stdAlphabet)
 	}
 	// stdSecret = removeSpaces([]rune(secretKey))
-	stdSecret = formatKeyword(stdSecret, stdAlphabet)
+	stdSecret = formatKeyword([]rune(secretKey), stdAlphabet)
 	return &TableConfig{
 		Alphabet:  stdAlphabet,
 		Keyword:   stdKeyword,

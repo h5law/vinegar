@@ -24,12 +24,7 @@ func NewVigenere(config *TableConfig) (Vigenere, error) {
 	width := len(config.Alphabet)
 	alphabet := make([]rune, width)
 	copy(alphabet, config.Alphabet)
-	if len(config.Keyword) != 0 {
-		alphabet = slices.DeleteFunc(alphabet, func(r rune) bool {
-			return slices.Contains(config.Keyword, r)
-		})
-		alphabet = append(config.Keyword, alphabet...)
-	}
+	alphabet = formatAlphabetWithKeyword(config.Keyword, alphabet)
 	table := make([][]rune, width)
 	table[0] = alphabet
 	for i := 1; i < width; i++ {
