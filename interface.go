@@ -5,6 +5,6 @@ type Vigenere interface {
 	// according to the vigenere table of the Vigenere struct.
 	Encrypt(message, keyword string) string
 	// Decrypt decrypts the provided ciphertext using the keyword and
-	// vigenere table from the struct - the resulting plaintext will have no spaces.
+	// the vigenere table from the struct
 	Decrypt(cipher, keyword string) string
 }

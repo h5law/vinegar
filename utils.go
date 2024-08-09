@@ -1,25 +1,24 @@
 package vinegar
 
 import (
-	"slices"
 	"unicode/utf8"
 )
 
 // removeSpaces removes all the spaces in a given rune slice.
-func removeSpaces(r []rune) []rune {
-	if !utf8.ValidString(string(r)) {
-		panic("Invalid UTF-8 string") // this should never happen
-	}
-	for i := slices.Index(r, ' '); i != -1; i = slices.Index(r, ' ') {
-		r = append(r[:i], r[i+1:]...)
-	}
-	return r
-}
+// func removeSpaces(r []rune) []rune {
+// 	if !utf8.ValidString(string(r)) {
+// 		panic("Invalid UTF-8 string") // this should never happen
+// 	}
+// 	for i := slices.Index(r, ' '); i != -1; i = slices.Index(r, ' ') {
+// 		r = append(r[:i], r[i+1:]...)
+// 	}
+// 	return r
+// }
 
-// removeDuplicates removes all duplicates from
+// removeDuplicateS removes all duplicates from
 // a UTF-8 string returning a slice of runes and its length.
 func removeDuplicates(word []rune) ([]rune, int) {
-	width := utf8.RuneCountInString(string(word))
+	width := len(word) // length in runes not bytes
 	seen := make(map[rune]bool, width)
 	stdWord := make([]rune, 0, width)
 
@@ -48,10 +47,8 @@ func formatKeyword(keyword, alphabet []rune) []rune {
 		}
 		keyword = keyword[1:]
 	}
-	var stdLen int
-	stdKeyword, stdLen = removeDuplicates(stdKeyword)
-	if stdLen > len(alphabet) {
-		return stdKeyword[:len(alphabet)] // truncate to alphabet length
+	if len(stdKeyword) > len(alphabet) {
+		stdKeyword = stdKeyword[:len(alphabet)]
 	}
 	return stdKeyword
 }
@@ -62,18 +59,18 @@ func formatSecretKeyword(secret, alphabet []rune, message string) []rune {
 	if !utf8.ValidString(message) {
 		panic("Invalid UTF-8 string") // this should never happen
 	}
-	secret = formatKeyword(secret, alphabet) // ensure secret is form
+	secret = formatKeyword(secret, alphabet) // ensure secret is formatted correctly
 
 	runeMsg := []rune(message)
-	runeMsg = removeSpaces(runeMsg)
+	// runeMsg = removeSpaces(runeMsg) // spaces will form a pattern as they are so common
 
 	k, m := len(secret), len(runeMsg)
 	if k == m {
 		return secret
 	}
-	if k > m {
-		return secret[:m]
-	}
+	// if k > m {
+	// 	return secret[:m]
+	// }
 	paddedSecret := make([]rune, 0, len(runeMsg))
 	for len(paddedSecret) != m {
 		if m-len(paddedSecret) >= k {

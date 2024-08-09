@@ -64,6 +64,55 @@ type TableConfig struct {
 	SecretKey []rune
 }
 
+func (t *TableConfig) Validate() error {
+	if t.Alphabet == nil {
+		return errors.New("Nil Alphabet")
+	}
+	if t.SecretKey == nil {
+		return errors.New("Nil Secret Key")
+	}
+	if !utf8.ValidString(string(t.Alphabet)) {
+		return errors.New("Invalid alphabet: not UTF-8 encoded")
+	}
+	if !utf8.ValidString(string(t.SecretKey)) {
+		return errors.New("Invalid secret key: not UTF-8 encoded")
+	}
+	if t.Keyword != nil {
+		if !utf8.ValidString(string(t.Keyword)) {
+			return errors.New("Invalid keyword: not UTF-8 encoded")
+		}
+		if len(t.Keyword) > len(t.Alphabet) {
+			return errors.New("Invalid keyword: longer than alphabet")
+		}
+		// if slices.Contains(t.Keyword, ' ') {
+		// 	return errors.New("Invalid keyword: space(s) present")
+		// }
+		seen := make(map[rune]bool, len(t.Keyword))
+		for _, r := range t.Keyword {
+			if !seen[r] {
+				seen[r] = true
+				continue
+			}
+			return errors.New("Invalid keyword: duplicate character(s)")
+		}
+	}
+	// if slices.Contains(t.Alphabet, ' ') {
+	// 	return errors.New("Invalid alphabet: space(s) present")
+	// }
+	// if slices.Contains(t.SecretKey, ' ') {
+	// 	return errors.New("Invalid secret key: space(s) present")
+	// }
+	seen := make(map[rune]bool, len(t.Alphabet))
+	for _, r := range t.Alphabet {
+		if !seen[r] {
+			seen[r] = true
+			continue
+		}
+		return errors.New("Invalid alphabet: duplicate character(s)")
+	}
+	return nil
+}
+
 func NewTableConfig(alphabet, keyword, secretKey string) (*TableConfig, error) {
 	if alphabet == "" {
 		return nil, errors.New("Alphabet cannot be empty")
@@ -82,14 +131,14 @@ func NewTableConfig(alphabet, keyword, secretKey string) (*TableConfig, error) {
 	}
 
 	var stdAlphabet, stdKeyword, stdSecret []rune
-	stdAlphabet = removeSpaces([]rune(alphabet))
+	// stdAlphabet = removeSpaces([]rune(alphabet))
 	stdAlphabet, _ = removeDuplicates(stdAlphabet)
 	if keyword != "" {
-		stdKeyword = removeSpaces([]rune(keyword))
+		// stdKeyword = removeSpaces([]rune(keyword))
 		stdKeyword, _ = removeDuplicates(stdKeyword)
 		stdKeyword = formatKeyword(stdKeyword, stdAlphabet)
 	}
-	stdSecret = removeSpaces([]rune(secretKey))
+	// stdSecret = removeSpaces([]rune(secretKey))
 	stdSecret = formatKeyword(stdSecret, stdAlphabet)
 	return &TableConfig{
 		Alphabet:  stdAlphabet,

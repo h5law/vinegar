@@ -9,47 +9,49 @@ import (
 var _ Vigenere = (*vigenere)(nil)
 
 // vigenere is the implementation of the Vigenere cipher containing the table
-// used for encryption and decryption of plain/cipher text
+// used for encryption and decryption of plain/cipher text as well as the
+// configuration used to create the table containing the alphabet and keywords.
 type vigenere struct {
-	table [76][76]rune
+	config *TableConfig
+	table  [][]rune
 }
 
-// NewVigenere produces a Vigenere Table using the given keyword. It first
-// will format the keyword given by removing any duplicates and enforcing it
-// to be 26 lowercasse latin characters. Once formatted the table is produced
-// by shifting the alphabet 26 times maaking a 26x26 matrix of runes
-func NewVigenere(keyword string) Vigenere {
-	v := &vigenere{
-		table: [76][76]rune{},
+// NewVigenere produces a Vigenere Table using the given TableConfig.
+func NewVigenere(config *TableConfig) (Vigenere, error) {
+	if err := config.Validate(); err != nil {
+		return nil, err
 	}
-	alphabet := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%^&*(){}_?"
-	// if keyword != "" {
-	// 	valid := formatTableKeyword(keyword)
-	// 	for _, c := range valid {
-	// 		alphabet = strings.ReplaceAll(alphabet, string(c), "")
-	// 	}
-	// 	alphabet = valid + alphabet
-	// }
-	v.table[0] = ([76]rune)([]rune(alphabet))
-	for i := 1; i < 76; i++ {
-		alphabet = alphabet[1:] + string(alphabet[0])
-		// v.table[i] = ([77]rune)([]rune(alphabet))
-		v.table[i] = ([76]rune)([]rune(alphabet))
+	width := len(config.Alphabet)
+	alphabet := make([]rune, width)
+	copy(alphabet, config.Alphabet)
+	if len(config.Keyword) != 0 {
+		alphabet = slices.DeleteFunc(alphabet, func(r rune) bool {
+			return slices.Contains(config.Keyword, r)
+		})
+		alphabet = append(config.Keyword, alphabet...)
 	}
-	return v
+	table := make([][]rune, width)
+	table[0] = alphabet
+	for i := 1; i < width; i++ {
+		alphabet = append(alphabet[1:], alphabet[0])
+		table[i] = alphabet
+	}
+	return &vigenere{
+		config: config,
+		table:  table,
+	}, nil
 }
 
 // Encrypt encrypts the given message using the keyword provided
 // according to the vigenere table of the Vigenere struct.
-func (v *vigenere) Encrypt(message, keyword string) string {
-	// msg := formatKeyword(message)
-	// key := formatEncryptionKeyword(keyword, msg)
+func (v vigenere) Encrypt(message, keyword string) string {
+	runeMsg := []rune(message)
+	key := formatSecretKeyword([]rune(keyword), v.config.Alphabet, message)
 	str := strings.Builder{}
-	for i := 0; i < len(message); i++ {
-		p := rune(message[i])
-		idx := slices.Index(v.table[0][:], rune(keyword[i]))
+	for i := 0; i < len(runeMsg); i++ {
+		idx := slices.Index(v.table[0][:], key[i])
 		for _, row := range v.table {
-			if row[0] == p {
+			if row[0] == runeMsg[i] {
 				str.WriteRune(row[idx])
 				break
 			}
@@ -59,15 +61,15 @@ func (v *vigenere) Encrypt(message, keyword string) string {
 }
 
 // Decrypt decrypts the provided ciphertext using the keyword and
-// vigenere table from the struct - the resulting plaintext will have no spaces.
-func (v *vigenere) Decrypt(cipher, keyword string) string {
-	// key := formatEncryptionKeyword(keyword, cipher)
+// vigenere table from the struct
+func (v vigenere) Decrypt(cipher, keyword string) string {
+	key := formatSecretKeyword([]rune(keyword), v.config.Alphabet, cipher)
 	str := strings.Builder{}
-	for i := 0; i < len(cipher); i++ {
-		c := rune(cipher[i])
-		idx := slices.Index(v.table[0][:], rune(keyword[i]))
+	runeCipher := []rune(cipher)
+	for i := 0; i < len(runeCipher); i++ {
+		idx := slices.Index(v.table[0][:], key[i])
 		for _, row := range v.table {
-			if row[idx] == c {
+			if row[idx] == runeCipher[i] {
 				str.WriteRune(row[0])
 				break
 			}
