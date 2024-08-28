@@ -12,7 +12,7 @@ import (
 // on the fields first to conform to the specifications.
 type TableConfig struct {
 	// Alphabet represents the characters that can be used in the table.
-	// It will have any duplicate characters removed as well as any spaces.
+	// It will have any duplicate characters removed.
 	// The alphabet is expected to be a UTF-8 encoded string. It's
 	// dimensions are used to generate the table, an alphabet of 26
 	// characters (the Latin alphabet for example) will produce a 26x26
@@ -64,6 +64,7 @@ type TableConfig struct {
 	SecretKey []rune
 }
 
+// Validate confirms whether the table configuration is valid or not.
 func (t *TableConfig) Validate() error {
 	if t.Alphabet == nil {
 		return errors.New("Nil Alphabet")

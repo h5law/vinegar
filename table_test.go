@@ -6,7 +6,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestVigenere_Config(t *testing.T) {
+func TestVigenere_NewTableConfig(t *testing.T) {
+	notValidUTF8 := "\xf2a\xf3bc"
 	cases := []struct {
 		desc                 string // test description
 		alphabet             string // input alphabet
@@ -22,7 +23,7 @@ func TestVigenere_Config(t *testing.T) {
 		err                  string // the expected error string (if any)
 	}{
 		{
-			desc:                 "Success: Standard Lating Alphabet",
+			desc:                 "Success: Standard Latin Alphabet",
 			alphabet:             "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
 			keyword:              "HIDETHETABLE", // contains duplicates
 			expectedKeyword:      "HIDETABL",
@@ -44,10 +45,44 @@ func TestVigenere_Config(t *testing.T) {
 			secretKey:            "ÆP∏ˆ,.&*)~`%$|", // contains characters outside of the alphabet
 			expectedSecretKey:    "ÆP∏ˆ,.&*)",
 			message:              "THIS IS A MESSAGE WITH SPACES, PUNCTUATION AND 世界MA»ÆP∏ SOME UTF-8",
-			expectedSecretKeyMsg: "ÆP∏ˆ,.&*)ÆP∏ˆ,.&*)ÆP∏ˆ,.&*)ÆP∏ˆ,.&*)ÆP∏ˆ,.&*)ÆP∏ˆ,.&*)ÆP∏ˆ,.&*)ÆP∏",
+			expectedSecretKeyMsg: "ÆP∏ˆ,.&*)ÆP∏ˆ,.&*)ÆP∏ˆ,.&*)ÆP∏ˆ,.&*)ÆP∏ˆ,.&*)ÆP∏ˆ,.&*)ÆP∏ˆ,.&*)ÆP∏", // same rune count
 			fail:                 false,
 			panic:                false,
 			err:                  "",
+		},
+		{
+			desc:     "Failure: Nil Alphabet",
+			alphabet: "",
+			fail:     true,
+			err:      "Alphabet cannot be empty",
+		},
+		{
+			desc:     "Failure: Nil Secret Key",
+			alphabet: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+			fail:     true,
+			err:      "SecretKey cannot be empty",
+		},
+		{
+			desc:      "Failure: Invalid UTF-8 Alphabet",
+			alphabet:  notValidUTF8,
+			secretKey: "HIDDEN",
+			fail:      true,
+			err:       "Invalid alphabet: not UTF-8 encoded",
+		},
+		{
+			desc:      "Failure: Invalid UTF-8 Table Keyword",
+			alphabet:  "ABCDEFG",
+			secretKey: "HIDDEN",
+			keyword:   notValidUTF8,
+			fail:      true,
+			err:       "Invalid keyword: not UTF-8 encoded",
+		},
+		{
+			desc:      "Failure: Invalid UTF-8 Secret Key",
+			alphabet:  "ABCDEFG",
+			secretKey: notValidUTF8,
+			fail:      true,
+			err:       "Invalid secret key: not UTF-8 encoded",
 		},
 	}
 
@@ -81,6 +116,14 @@ func TestVigenere_Config(t *testing.T) {
 					t, err,
 					"NewTableConfig should not have returned an error, got: %s\n",
 					err.Error(),
+				)
+			}
+			if config.Validate() != nil {
+				require.NoErrorf(
+					t,
+					config.Validate(),
+					"Config Validation Failed: %s\n",
+					config.Validate().Error(),
 				)
 			}
 			require.Equalf(

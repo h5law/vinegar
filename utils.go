@@ -85,9 +85,6 @@ func formatSecretKeyword(secret, alphabet []rune, message string) []rune {
 	if k == m {
 		return secret
 	}
-	// if k > m {
-	// 	return secret[:m]
-	// }
 	paddedSecret := make([]rune, 0, len(runeMsg))
 	for len(paddedSecret) != m {
 		if m-len(paddedSecret) >= k {
